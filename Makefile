@@ -27,3 +27,4 @@ live:
 		exit 1; \
 	fi
 	@$(MAKE) -C slides/$(SLIDE)/src live
+	
