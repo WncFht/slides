@@ -143,4 +143,3 @@ make -C slides/my-slide/src clean
 ## License
 
 MIT
-
