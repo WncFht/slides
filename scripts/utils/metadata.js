@@ -10,7 +10,7 @@ function getSlideMetadata(slidePath) {
         const content = fs.readFileSync(mdPath, 'utf8');
         
         // 计算幻灯片页数（根据 --- 分隔符）
-        const pageCount = content.split('---').length - 1;
+        const pageCount = content.split('---').length;
         
         // 尝试从内容中提取描述（第一个非标题文本）
         const description = content
