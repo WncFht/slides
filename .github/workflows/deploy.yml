@@ -2,35 +2,52 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
-  # 允许手动触发
-  workflow_dispatch:
+    branches: [main] # 当 main 分支收到推送时触发
+  workflow_dispatch: # 允许手动触发
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: "16"
+          node-version: "18"
+          cache: "npm"
 
       - name: Install dependencies
         run: |
           npm install -g reveal-md
+          # 如果有其他依赖，在这里安装
 
       - name: Build slides
-        run: make build-all
+        run: |
+          make build-all
+          # 确保 dist 目录存在
+          [ -d dist ] || exit 1
+        env:
+          BASE_URL: "/${{ github.event.repository.name }}"
 
-      - name: Generate index
-        run: node scripts/generate-index.js
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: "./dist"
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: gh-pages
+        id: deployment
+        uses: actions/deploy-pages@v2
