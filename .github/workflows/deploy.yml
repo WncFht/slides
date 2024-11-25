@@ -15,29 +15,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # 获取完整历史以支持增量构建
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
 
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            dist
+            .build-state.json
+          key: ${{ runner.os }}-slides-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-slides-
+
       - name: Install dependencies
         run: |
           npm install -g reveal-md
           npm install
 
-      - name: Build slides
-        run: |
-          mkdir -p dist
-          # 构建所有幻灯片
-          for slide in slides/*/src; do
-            echo "Building ${slide}..."
-            make -C "${slide}" build || exit 1
-          done
-          # 生成索引页面
-          node scripts/generate-index.js
-          # 验证构建
-          [ -d dist ] || exit 1
+      - name: Incremental build
+        run: node scripts/incremental-build.js
         env:
           NODE_ENV: production
 
