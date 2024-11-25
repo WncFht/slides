@@ -22,6 +22,7 @@ const html = `
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${config.title}</title>
+    <link rel="icon" type="image/x-icon" href="${config.baseUrl}/favicon.ico">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
     <style>
         .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
@@ -75,6 +76,10 @@ const html = `
 </html>
 `;
 
+fs.copyFileSync(
+    path.join(__dirname, '../common/favicon.ico'),
+    path.join(distDir, 'favicon.ico')
+  );
 // 写入 index.html
 fs.writeFileSync(path.join(distDir, 'index.html'), html);
 console.log('Index page generated successfully!');
