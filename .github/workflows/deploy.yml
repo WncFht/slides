@@ -15,28 +15,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # 获取完整历史以支持增量构建
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
+          cache: "npm" # 启用npm缓存
 
-      - name: Restore cache
+      # 缓存reveal-md全局安装
+      - name: Cache reveal-md
+        id: cache-reveal-md
         uses: actions/cache@v3
         with:
-          path: |
-            dist
-            .build-state.json
-          key: ${{ runner.os }}-slides-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-slides-
+          path: /home/runner/.npm/_npx # npm全局缓存目录
+          key: ${{ runner.os }}-reveal-md-cache
 
-      - name: Install dependencies
-        run: |
-          npm install -g reveal-md
-          npm install
+      # 只在缓存未命中时安装
+      - name: Install reveal-md
+        if: steps.cache-reveal-md.outputs.cache-hit != 'true'
+        run: npm install -g reveal-md
+
+      # 缓存构建状态
+      - name: Restore build cache
+        uses: actions/cache@v3
+        with:
+          path: .build-state.json
+          key: ${{ runner.os }}-build-state-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-build-state-
 
       - name: Incremental build
         run: node scripts/incremental-build.js
@@ -49,3 +55,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           force_orphan: true
+          # 添加缓存设置
+          enable_jekyll: false
+          keep_files: true
