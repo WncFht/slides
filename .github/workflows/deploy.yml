@@ -3,6 +3,11 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    paths:
+      - "slides/**"
+      - "common/**"
+      - "scripts/**"
+      - "config.json"
   workflow_dispatch:
 
 jobs:
@@ -23,7 +28,15 @@ jobs:
 
       - name: Build slides
         run: |
-          make build-all
+          mkdir -p dist
+          # 构建所有幻灯片
+          for slide in slides/*/src; do
+            echo "Building ${slide}..."
+            make -C "${slide}" build || exit 1
+          done
+          # 生成索引页面
+          node scripts/generate-index.js
+          # 验证构建
           [ -d dist ] || exit 1
         env:
           NODE_ENV: production
