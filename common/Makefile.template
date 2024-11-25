@@ -1,0 +1,30 @@
+.PHONY: live build clean
+
+SLIDE_NAME := $(notdir $(patsubst %/src,%,$(CURDIR)))
+COMMON_DIR := ../../../common
+BASE_URL := $(shell node -p "require('../../../config.json').baseUrl")
+
+live: prepare
+	@echo "Previewing $(SLIDE_NAME) slides..."
+	-@reveal-md main.md -w \
+		--scripts https://cdn.tonycrane.cc/heti/heti.js,heti_worker.js \
+		--template $(COMMON_DIR)/template.html \
+		--css custom.css,dark.css \
+		|| true
+
+build: prepare
+	@echo "Building $(SLIDE_NAME) slides..."
+	@reveal-md main.md \
+		--scripts https://cdn.tonycrane.cc/heti/heti.js,heti_worker.js \
+		--template $(COMMON_DIR)/template.html \
+		--css custom.css,dark.css \
+		--static ../../dist/$(SLIDE_NAME) \
+		--assets-dir assets \
+		--base-path $(BASE_URL)/$(SLIDE_NAME)
+	@cp $(COMMON_DIR)/heti_worker.js ../../dist/$(SLIDE_NAME)/assets/
+	@cp $(COMMON_DIR)/custom.css ../../dist/$(SLIDE_NAME)/assets/
+	@cp $(COMMON_DIR)/dark.css ../../dist/$(SLIDE_NAME)/assets/
+
+clean:
+	@echo "Cleaning up $(SLIDE_NAME)..."
+	rm -rf ../../dist/$(SLIDE_NAME)
