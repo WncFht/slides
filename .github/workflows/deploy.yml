@@ -16,14 +16,17 @@ jobs:
         with:
           node-version: "18"
 
-      - name: Install reveal-md
-        run: npm install -g reveal-md
+      - name: Install dependencies
+        run: |
+          npm install -g reveal-md
+          npm install
 
       - name: Build slides
         run: |
           make build-all
-          # 确保构建成功
           [ -d dist ] || exit 1
+        env:
+          NODE_ENV: production
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

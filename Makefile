@@ -6,25 +6,27 @@ all: build-all
 
 build-all: clean
 	@mkdir -p dist
+	@echo "Building all slides..."
 	@for slide in $(SLIDES); do \
 		echo "Building $${slide}..."; \
-		$(MAKE) -C $${slide} build; \
+		if ! $(MAKE) -C $${slide} build; then \
+			echo "Error building $${slide}"; \
+			exit 1; \
+		fi \
 	done
+	@echo "Generating index page..."
 	@node scripts/generate-index.js
 
 clean:
 	@echo "Cleaning up..."
 	rm -rf dist/
 
-# 本地预览
 serve:
 	@python3 -m http.server --directory dist 8000
 
-# 本地预览特定幻灯片
 live:
 	@if [ -z "$(SLIDE)" ]; then \
 		echo "Please specify SLIDE=<slide-name>"; \
 		exit 1; \
 	fi
 	@$(MAKE) -C slides/$(SLIDE)/src live
-	
