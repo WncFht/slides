@@ -3,10 +3,8 @@ title: Wordle with Solver
 separator: <!--s-->
 verticalSeparator: <!--v-->
 theme: simple
-highlightTheme: monokai-sublime
-css: 
-    - custom.css
-    # - dark.css
+highlightTheme: github
+css: custom.css
 revealOptions:
     transition: 'slide'
     transitionSpeed: fast

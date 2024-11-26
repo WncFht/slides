@@ -24,7 +24,7 @@ live: prepare
 	-@reveal-md main.md -w \
 		--scripts https://cdn.tonycrane.cc/heti/heti.js,heti_worker.js \
 		--template $(COMMON_DIR)/template.html \
-		--css custom.css,dark.css \
+		--css custom.css \
 		|| true
 
 # 构建
@@ -33,7 +33,7 @@ build: prepare prepare-dist
 	@reveal-md main.md \
 		--scripts https://cdn.tonycrane.cc/heti/heti.js,heti_worker.js \
 		--template $(COMMON_DIR)/template.html \
-		--css custom.css,dark.css \
+		--css custom.css \
 		--static $(DIST_DIR)/$(SLIDE_NAME) \
 		--assets-dir assets \
 		--base-path $(BASE_URL)/$(SLIDE_NAME)
