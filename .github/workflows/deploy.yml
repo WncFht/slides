@@ -16,32 +16,39 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # 获取完整历史以支持增量构建
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: "18"
 
-      - name: Restore cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            dist
-            .build-state.json
-          key: ${{ runner.os }}-slides-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-slides-
-
       - name: Install dependencies
         run: |
           npm install -g reveal-md
           npm install
 
+      - name: Verify directory structure
+        run: |
+          echo "Current directory contents:"
+          ls -la
+          echo "\nSlides directory contents:"
+          ls -la slides/
+
       - name: Incremental build
-        run: node scripts/incremental-build.js
+        run: |
+          node scripts/incremental-build.js
         env:
           NODE_ENV: production
+
+      - name: Verify build output
+        run: |
+          echo "Checking dist directory..."
+          ls -la dist/
+          echo "\nChecking for PDF files..."
+          find dist -name "*.pdf" -type f
+          echo "\nChecking for index.html files..."
+          find dist -name "index.html" -type f
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
@@ -49,3 +56,8 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
           force_orphan: true
+
+      - name: Verify deployment
+        run: |
+          echo "Deployment completed. Checking final dist directory state:"
+          ls -la dist/
