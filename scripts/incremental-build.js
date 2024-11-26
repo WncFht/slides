@@ -20,6 +20,20 @@ function saveBuildState(state) {
 
 function needsRebuild(slideName, state) {
   const slideDir = path.join(SLIDES_DIR, slideName);
+  const pdfPath = path.join(slideDir, 'slides.pdf');
+  
+  // 检查是否是 PDF 幻灯片
+  if (fs.existsSync(pdfPath)) {
+    const currentState = getDirectoryHash(slideDir);
+    const previousState = state.slides[slideName]?.files || {};
+    
+    for (const [file, info] of Object.entries(currentState)) {
+      if (!previousState[file] || previousState[file].hash !== info.hash) {
+        return true;
+      }
+    }
+    return false;
+  }
   const srcDir = path.join(slideDir, 'src');
   
   if (!fs.existsSync(srcDir)) return false;
@@ -58,10 +72,22 @@ async function main() {
     if (needsRebuild(slide, state)) {
       console.log(`Building ${slide}...`);
       try {
-        execSync(`make -C ${SLIDES_DIR}/${slide}/src build`, { stdio: 'inherit' });
+        const slideDir = path.join(SLIDES_DIR, slide);
+        const distDir = path.join('dist', slide);
+        
+        if (fs.existsSync(path.join(slideDir, 'slides.pdf'))) {
+          // PDF 幻灯片构建
+          buildPdfSlide(slideDir, distDir);
+        } else {
+          // 原有的 Markdown 幻灯片构建
+          execSync(`make -C ${SLIDES_DIR}/${slide}/src build`, { stdio: 'inherit' });
+        }
+        
         state.slides[slide] = {
           lastBuild: new Date().toISOString(),
-          files: getDirectoryHash(path.join(SLIDES_DIR, slide, 'src'))
+          files: fs.existsSync(path.join(slideDir, 'slides.pdf')) 
+            ? getDirectoryHash(slideDir)
+            : getDirectoryHash(path.join(slideDir, 'src'))
         };
         rebuilt = true;
       } catch (error) {
@@ -72,7 +98,6 @@ async function main() {
       console.log(`Skipping ${slide} (no changes)`);
     }
   }
-
   if (rebuilt) {
     // 重新生成索引页面
     console.log('Regenerating index page...');

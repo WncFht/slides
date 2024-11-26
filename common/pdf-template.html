@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <link rel="icon" type="image/x-icon" href="${baseUrl}/favicon.ico">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        :root {
+            --background-color: #ffffff;
+            --text-color: #333333;
+        }
+
+        [data-theme="dark"] {
+            --background-color: #1a1a1a;
+            --text-color: #ffffff;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #toolbar {
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #pageNumber {
+            width: 50px;
+            text-align: center;
+        }
+
+        #viewer {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #pdfCanvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .theme-switch {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-switch" onclick="toggleTheme()">🌓 Theme</button>
+    <div class="container">
+        <div id="toolbar">
+            <button onclick="previousPage()">Previous</button>
+            <input type="number" id="pageNumber" min="1" value="1">
+            <span>/ <span id="pageCount">0</span></span>
+            <button onclick="nextPage()">Next</button>
+        </div>
+        <div id="viewer">
+            <canvas id="pdfCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        const canvas = document.getElementById('pdfCanvas');
+        const context = canvas.getContext('2d');
+
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({scale: 1.5});
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                
+                return page.render(renderContext).promise;
+            }).then(function() {
+                pageRendering = false;
+                if (pageNumPending !== null) {
+                    renderPage(pageNumPending);
+                    pageNumPending = null;
+                }
+            });
+
+            document.getElementById('pageNumber').value = num;
+        }
+
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+
+        function previousPage() {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        }
+
+        function nextPage() {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        }
+
+        // Load the PDF
+        pdfjsLib.getDocument('slides.pdf').promise.then(function(pdf) {
+            pdfDoc = pdf;
+            document.getElementById('pageCount').textContent = pdf.numPages;
+            renderPage(pageNum);
+        });
+
+        // Handle page number input
+        document.getElementById('pageNumber').addEventListener('change', function(e) {
+            const num = parseInt(e.target.value);
+            if (num > 0 && num <= pdfDoc.numPages) {
+                pageNum = num;
+                queueRenderPage(num);
+            }
+        });
+
+        // Theme switching
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+</body>
+</html>

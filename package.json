@@ -3,6 +3,9 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-      "build": "make build-all"
+        "build": "make build-all"
+    },
+    "dependencies": {
+        "slides": "file:"
     }
-  }
+}
