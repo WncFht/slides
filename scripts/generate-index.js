@@ -26,15 +26,21 @@ function formatDateTime(dateStr) {
 const slidesDir = path.join(__dirname, '../slides');
 const slidesInfo = fs.readdirSync(slidesDir)
    .filter(file => fs.statSync(path.join(slidesDir, file)).isDirectory())
-   .filter(file => fs.existsSync(path.join(distDir, file)))
    .map(file => {
+       console.log(`Processing slide directory: ${file}`);
        const metadata = getSlideMetadata(path.join(slidesDir, file));
-       return {
-           name: file,
-           ...metadata
-       };
+       if (metadata) {
+           return {
+               name: file,
+               ...metadata
+           };
+       }
+       return null;
    })
+   .filter(slide => slide !== null)
    .sort((a, b) => new Date(b.modified) - new Date(a.modified));
+
+console.log('Slides found:', slidesInfo.map(s => s.name).join(', '));
 
 // 生成 HTML
 const html = `
@@ -201,14 +207,15 @@ const html = `
                ${slidesInfo.map(slide => `
                    <li class="slide-item">
                        <a href="${config.baseUrl}/${slide.name}/">
-                           <h3 class="slide-title">${slide.name}</h3>
+                           <h3 class="slide-title">${slide.title || slide.name}</h3>
                            ${slide.description ? `
                                <p class="slide-description">${slide.description}</p>
                            ` : ''}
                            <div class="slide-meta">
-                               <span>Created: ${formatDateTime(slide.created)}</span>
-                               <span>Modified: ${formatDateTime(slide.modified)}</span>
+                               <span data-created>Created: ${formatDateTime(slide.created)}</span>
+                               <span data-modified>Modified: ${formatDateTime(slide.modified)}</span>
                                ${slide.pageCount ? `<span>Pages: ${slide.pageCount}</span>` : ''}
+                               <span class="slide-type">${slide.type === 'pdf' ? 'PDF' : 'Slides'}</span>
                            </div>
                        </a>
                    </li>
@@ -277,10 +284,10 @@ const html = `
 
 // 复制 favicon
 fs.copyFileSync(
-   path.join(__dirname, '../common/favicon.ico'),
-   path.join(distDir, 'favicon.ico')
-);
-
-// 写入 index.html
-fs.writeFileSync(path.join(distDir, 'index.html'), html);
-console.log('Index page generated successfully!');
+    path.join(__dirname, '../common/favicon.ico'),
+    path.join(distDir, 'favicon.ico')
+ );
+ 
+ // 写入 index.html
+ fs.writeFileSync(path.join(distDir, 'index.html'), html);
+ console.log('Index page generated successfully!');

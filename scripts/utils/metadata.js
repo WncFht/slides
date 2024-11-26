@@ -1,37 +1,61 @@
 const fs = require('fs');
 const path = require('path');
-const { getPdfMetadata } = require('./pdf-metadata');
 
 function getSlideMetadata(slidePath) {
-    // 首先检查是否是 PDF 幻灯片
+    const metadataPath = path.join(slidePath, 'metadata.json');
     const pdfPath = path.join(slidePath, 'slides.pdf');
-    if (fs.existsSync(pdfPath)) {
-        return getPdfMetadata(slidePath);
-    }
-
-    // 原有的 Markdown 幻灯片处理逻辑
-    const srcPath = path.join(slidePath, 'src');
-    const mdPath = path.join(srcPath, 'main.md');
+    const mdPath = path.join(slidePath, 'src', 'main.md');
     
     try {
-        const stats = fs.statSync(mdPath);
-        const content = fs.readFileSync(mdPath, 'utf8');
+        // 首先检查是否存在 metadata.json
+        if (fs.existsSync(metadataPath)) {
+            console.log(`Using metadata from ${metadataPath}`);
+            const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+            return {
+                ...metadata,
+                type: fs.existsSync(pdfPath) ? 'pdf' : 'markdown'
+            };
+        }
         
-        const pageCount = content.split('---').length;
+        // 检查是否是 PDF 幻灯片
+        if (fs.existsSync(pdfPath)) {
+            console.log(`Found PDF slide at ${pdfPath}`);
+            const stats = fs.statSync(pdfPath);
+            return {
+                created: stats.birthtime.toISOString(),
+                modified: stats.mtime.toISOString(),
+                type: 'pdf',
+                description: '',
+                title: path.basename(slidePath)
+            };
+        }
         
-        const description = content
-            .split('---')[0]
-            .split('\n')
-            .filter(line => !line.startsWith('#') && line.trim())
-            .map(line => line.trim())[0] || '';
+        // 处理 Markdown 幻灯片
+        if (fs.existsSync(mdPath)) {
+            console.log(`Found Markdown slide at ${mdPath}`);
+            const stats = fs.statSync(mdPath);
+            const content = fs.readFileSync(mdPath, 'utf8');
+            
+            const pageCount = content.split('---').length;
+            const description = content
+                .split('---')[0]
+                .split('\n')
+                .filter(line => !line.startsWith('#') && line.trim())
+                .map(line => line.trim())[0] || '';
 
-        return {
-            created: stats.birthtime.toISOString(),
-            modified: stats.mtime.toISOString(),
-            pageCount,
-            description,
-            type: 'markdown'
-        };
+            return {
+                created: stats.birthtime.toISOString(),
+                modified: stats.mtime.toISOString(),
+                pageCount,
+                description,
+                type: 'markdown',
+                title: path.basename(slidePath)
+            };
+        }
+        
+        console.warn(`No valid slide content found in ${slidePath}`);
+        return null;
+        
     } catch (err) {
         console.warn(`Warning: Could not get metadata for ${slidePath}`, err);
         return null;
